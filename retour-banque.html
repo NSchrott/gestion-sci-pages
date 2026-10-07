@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retour de la banque · Gestion SCI</title>
+<style>
+  body { font: 16px/1.6 system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; color: #1f2328; }
+</style>
+</head>
+<body>
+<h1>Retour de la banque</h1>
+<p id="message">Redirection vers l'outil de gestion…</p>
+<script>
+  // Relais HTTPS exigé par Enable Banking : renvoie le navigateur vers l'outil, qui tourne
+  // sur le poste du gérant ou sur le NAS (Tailscale). L'adresse de l'outil voyage dans
+  // « state » ; seules les adresses locales ou Tailscale sont acceptées.
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var etat = params.get("state") || "";
+    var cible = "";
+    try {
+      var b64 = etat.split(".")[0].replace(/-/g, "+").replace(/_/g, "/");
+      cible = atob(b64 + "===".slice((b64.length + 3) % 4));
+    } catch (e) { cible = ""; }
+    var autorisee = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(cible)
+      || /^https?:\/\/[a-z0-9-]+\.[a-z0-9-]+\.ts\.net(:\d+)?\//.test(cible);
+    if (autorisee) {
+      window.location.replace(cible + window.location.search);
+    } else {
+      document.getElementById("message").textContent =
+        "Adresse de retour inconnue : relancez la connexion depuis l'outil.";
+    }
+  })();
+</script>
+</body>
+</html>
