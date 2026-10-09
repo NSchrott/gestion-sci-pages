@@ -14,7 +14,8 @@
 <script>
   // Relais HTTPS exigé par Enable Banking : renvoie le navigateur vers l'outil, qui tourne
   // sur le poste du gérant ou sur le NAS (Tailscale). L'adresse de l'outil voyage dans
-  // « state » ; seules les adresses locales ou Tailscale sont acceptées.
+  // « state » ; seules les adresses locales (poste, réseau privé, nom de machine) ou
+  // Tailscale sont acceptées.
   (function () {
     var params = new URLSearchParams(window.location.search);
     var etat = params.get("state") || "";
@@ -23,8 +24,16 @@
       var b64 = etat.split(".")[0].replace(/-/g, "+").replace(/_/g, "/");
       cible = atob(b64 + "===".slice((b64.length + 3) % 4));
     } catch (e) { cible = ""; }
-    var autorisee = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(cible)
-      || /^https?:\/\/[a-z0-9-]+\.[a-z0-9-]+\.ts\.net(:\d+)?\//.test(cible);
+    var hote = /^https?:\/\/([^\/:]+)(:\d+)?\//.exec(cible);
+    var h = hote ? hote[1].toLowerCase() : "";
+    var autorisee = h === "localhost"
+      || /^127\.\d+\.\d+\.\d+$/.test(h)
+      || /^10\.\d+\.\d+\.\d+$/.test(h)
+      || /^192\.168\.\d+\.\d+$/.test(h)
+      || /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(h)
+      || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+$/.test(h)  // Tailscale
+      || /^[a-z0-9-]+$/.test(h)                                           // nom de machine
+      || /^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$/.test(h);
     if (autorisee) {
       window.location.replace(cible + window.location.search);
     } else {
